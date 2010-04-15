@@ -6,3 +6,5 @@ meguro
 meguro_g
 *.tar.gz
 *.tar
+map.out
+reduce.out
