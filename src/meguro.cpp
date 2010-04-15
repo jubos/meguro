@@ -26,10 +26,13 @@ static void map_master(MeguroEnvironment* env);
 static void reduce_master(MeguroEnvironment* env);
 static void* threaded_map(void* data);
 static void* threaded_reduce(void* data);
+static void print_input_files(MeguroEnvironment* env);
 
 int main(int argc, char **argv)
 {
   MeguroEnvironment env = MeguroEnvironment();
+  int verbose_progress = 0;
+  bool opt_list = false;
 
   struct option long_options[] = {
     {"javascript",    required_argument, 0, 'j'},
@@ -43,10 +46,11 @@ int main(int argc, char **argv)
     {"threads",       required_argument, 0, 't'},
     {"optimize",      no_argument,       0, 'o'},
     {"dictionary",    required_argument, 0, 'd'},
-    {"verbose",       no_argument,       0, 'p'},
+    {"verbose",       no_argument,       &verbose_progress, 1},
     {"version",       no_argument,       0, 'v'},
     {"key",           required_argument, 0, 'k'},
     {"help",          no_argument,       0, 'h'},
+    {"list",          no_argument,       0, 'l'},
     {0,0,0,0}
   };
 
@@ -76,9 +80,12 @@ Misc. Options\n\
   -e/--skip-map      : just reduce, this means the input file is the output of another map\n\
   -h/--help          : show this message\n\
   -k/--key           : just run the map/reduce on the one key\n\
-  -p/--verbose       : show verbose progress\n\
+  --verbose          : show verbose progress\n\
   -v/--version       : show the version\n\
   \n\
+Output File Options\n\
+  -l/--list          : list a map or reduce output files contents in a key<TAB>value format\n\
+\n\
 Report bugs at http://github.com/jubos/meguro\n";
 
   char* dictionary_file = NULL;
@@ -91,14 +98,13 @@ Report bugs at http://github.com/jubos/meguro\n";
 
   int option_index = 0;
   while(1) {
-    c = getopt_long(argc, argv, "a:bm:r:j:t:hvd:k:pon:ex:", long_options, &option_index);
+    c = getopt_long(argc, argv, "a:bm:r:j:t:hvd:k:pon:ex:l", long_options, &option_index);
 
     if (c == -1)
       break;
 
     switch (c) {
       case 0:
-        printf("%s\n", long_options[option_index].name);
         break;
       case 'b':
         env.map_bzip2 = true;
@@ -133,11 +139,11 @@ Report bugs at http://github.com/jubos/meguro\n";
       case 'a':
         mmap_size = optarg;
         break;
-      case 'p':
-        env.verbose_progress = true;
-        break;
       case 'o':
         env.optimize_bucket_count = true;
+        break;
+      case 'l':
+        opt_list = true;
         break;
       case ':':
         printf("Usage error\n");
@@ -157,6 +163,8 @@ Report bugs at http://github.com/jubos/meguro\n";
         break;
     }
   }
+  
+  env.verbose_progress = (verbose_progress == 1);
 
   for(int index = optind; index < argc; index++) {
     env.input_paths.push_back(argv[index]);
@@ -166,6 +174,11 @@ Report bugs at http://github.com/jubos/meguro\n";
     fprintf(stderr,"You must specify at least one input file\n");
     fprintf(stderr,usage);
     exit(-1);
+  }
+
+  if (opt_list) {
+    print_input_files(&env);
+    exit(0);
   }
 
   if (!env.js_file) {
@@ -406,5 +419,62 @@ static bool parse_javascript_file(MeguroEnvironment* env)
   } catch (JSHandleException& e) {
     fprintf(stderr,"%s\n",e.what());
     return false;
+  }
+}
+
+static int printdata(const char *ptr, int size, bool px){
+  int len = 0;
+  while(size-- > 0){
+    if(px){
+      if(len > 0) putchar(' ');
+      len += printf("%02X", *(unsigned char *)ptr);
+    } else {
+      putchar(*ptr);
+      len++;
+    }
+    ptr++;
+  }
+  return len;
+}
+
+/*
+ * This function just uses the iterator to print out the key/values of an input
+ * file This is useful in just letting the user see the output without diving
+ * into tchmgr.
+ */
+static void print_input_files(MeguroEnvironment* env)
+{
+  for(vector<char*>::const_iterator ii = env->input_paths.begin(); ii != env->input_paths.end(); ii++) {
+    int ecode;
+    char* path = *ii;
+    TCHDB* tchdb = tchdbnew();
+
+    if(!tchdbopen(tchdb,path,HDBOREADER | HDBONOLCK)) {
+      ecode = tchdbecode(tchdb);
+      fprintf(stderr, "open error: %s\n", tchdberrmsg(ecode));
+      return;
+    }
+
+    if(!tchdbiterinit(tchdb)) {
+      ecode = tchdbecode(tchdb);
+      fprintf(stderr, "iterator error: %s\n", tchdberrmsg(ecode));
+      return;
+    }
+
+    TCXSTR *key = tcxstrnew();
+    TCXSTR *val = tcxstrnew();
+    while(tchdbiternext3(tchdb, key, val)){
+      printdata((const char*)tcxstrptr(key), tcxstrsize(key), false);
+      putchar('\t');
+      printdata((const char*) tcxstrptr(val), tcxstrsize(val), false);
+      putchar('\n');
+    }
+    tcxstrdel(val);
+    tcxstrdel(key);
+
+    if (!tchdbclose(tchdb)) {
+      ecode = tchdbecode(tchdb);
+      fprintf(stderr, "close error: %s\n", tchdberrmsg(ecode));
+    }
   }
 }
