@@ -78,6 +78,23 @@ def copytree(src, dst, symlinks=False, ignore=None):
     if errors:
         raise Error, errors
 
+def configure_autoconf(conf):
+  print("----- Configuring Autoconf -----")
+  src = join(conf.srcdir,"deps/autoconf-2.13")
+  default_tgt = join(conf.blddir, "autoconf")
+  if not os.path.exists(default_tgt):
+    copytree(src,default_tgt,True)
+
+  if os.system("cd %s && ./configure && make" % (default_tgt)) != 0:
+    conf.fatal("Building Autoconf failed.")
+
+  conf.env["AUTOCONF_HOME"] = default_tgt
+  conf.env["AUTOCONF_BIN"] = join(default_tgt,"autoconf")
+
+  print(conf.env["AUTOCONF_BIN"])
+
+
+
 def configure_nspr(conf):
   print("----- Configuring NSPR -----")
   src = join(conf.srcdir,"deps/nspr")
@@ -150,7 +167,8 @@ def configure_spidermonkey(conf):
 
   nspr_include_dir = join(conf.blddir, "default", "deps/nspr/dist/include/nspr")
   nspr_lib_dir = join(conf.blddir, "default", "deps/nspr/dist/lib")
-  configure_template = "cd %s && %s && ./configure --enable-threadsafe --enable-static --with-nspr-cflags=-I%s --with-nspr-libs='-L%s -lplds4 -lplc4 -lnspr4' %s"
+  autoconf_template = "cd %s && %s -m %s --macro-dir %s"
+  configure_template = "cd %s && ./configure --enable-threadsafe --enable-static --with-nspr-cflags=-I%s --with-nspr-libs='-L%s -lplds4 -lplc4 -lnspr4' %s"
 
   gczeal = ''
   if conf.env["USE_GCZEAL"]:
@@ -160,18 +178,30 @@ def configure_spidermonkey(conf):
   if not os.path.exists(default_tgt):
     copytree(src,default_tgt,True)
 
-  if os.system(configure_template % (default_tgt,conf.env.AUTOCONF, nspr_include_dir, nspr_lib_dir,gczeal)) != 0:
+  print("------ Autoconfing Spidermonkey -----")
+  cmd = autoconf_template % (default_tgt, conf.env.AUTOCONF_BIN, conf.env.AUTOCONF_HOME, conf.env.AUTOCONF_HOME)
+  if os.system(cmd) != 0:
+    conf.fatal("Autoconfing Spidermonkey failed.")
+
+  if os.system(configure_template % (default_tgt,nspr_include_dir, nspr_lib_dir,gczeal)) != 0:
     conf.fatal("Configuring Spidermonkey failed.")
 
   if conf.env["USE_DEBUG"]:
-    print("------ Configuring Debug Spidermonkey ------")
     g_nspr_include_dir = join(conf.blddir, "debug", "deps/nspr/dist/include/nspr")
     g_nspr_lib_dir = join(conf.blddir, "debug", "deps/nspr/dist/lib")
     debug_tgt = join(conf.blddir, "debug", "deps/spidermonkey")
     if not os.path.exists(debug_tgt):
       copytree(src,debug_tgt,True)
 
-    cmd = (configure_template % (debug_tgt,conf.env.AUTOCONF, 
+    print("------ Autoconfing Debug Spidermonkey -----")
+    cmd = autoconf_template % (debug_tgt, conf.env.AUTOCONF_BIN, conf.env.AUTOCONF_HOME, conf.env.AUTOCONF_HOME)
+    print cmd
+    if os.system(cmd) != 0:
+      conf.fatal("Autoconfing Spidermonkey failed.")
+
+    print("------ Configuring Debug Spidermonkey ------")
+
+    cmd = (configure_template % (debug_tgt, 
                                  g_nspr_include_dir, 
                                  g_nspr_lib_dir,
                                  gczeal)) + " --enable-debug"
@@ -216,12 +246,12 @@ def configure(conf):
     conf.fatal('pthread library not found')
 
   conf.check(lib='dl', uselib_store='DL')
-  if not sys.platform.startswith("sunos"):
+  if not sys.platform.startswith("sunos") and not sys.platform.startswith("darwin"):
     conf.env.append_value("CCFLAGS", "-rdynamic")
     conf.env.append_value("LINKFLAGS_DL", "-rdynamic")
 
 
-  conf.find_program(['autoconf213','autoconf-2.13'], var='AUTOCONF', mandatory=True)
+  #conf.find_program(['autoconf213','autoconf-2.13'], var='AUTOCONF', mandatory=True)
 
   conf.define("HAVE_CONFIG_H", 1)
 
@@ -253,6 +283,7 @@ def configure(conf):
   conf.env.append_value('CXXFLAGS', ['-DNDEBUG', '-O3'])
   conf.write_config_header("config.h")
 
+  configure_autoconf(conf)
   configure_nspr(conf)
   configure_spidermonkey(conf)
   configure_tokyocabinet(conf)
