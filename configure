@@ -1,0 +1,14 @@
+#!/bin/sh
+
+CUR_DIR=$PWD
+
+#possible relative path
+WORKINGDIR=`dirname $0`
+cd $WORKINGDIR
+#abs path
+WORKINGDIR=`pwd`
+cd $CUR_DIR
+
+WAFDIR=$WORKINGDIR/tools/wafadmin "${WORKINGDIR}/tools/waf-light" --jobs=1 configure $*
+
+exit $?

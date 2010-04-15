@@ -1,0 +1,14 @@
+--V8--
+$ time build/src/meguro -i ~/new.tc -j benchmarks/simple_emit.js -o ~/output.tc
+Mapping:     96070 / 96070
+
+real  0m13.862s
+user  0m10.684s
+sys 0m2.821s
+
+$ time build/src/meguro -i ~/new.tc -j benchmarks/simple_json.js -o ~/output.tc
+Mapping:     34344 / 96070^C
+
+real  58m23.152s
+user  57m9.780s
+sys 0m31.428s

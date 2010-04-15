@@ -1,0 +1,12 @@
+#ifndef __MEGURO_VERSION_H__
+#define __MEGURO_VERSION_H__
+
+#ifdef NDEBUG
+# define MEGURO_VERSION "@VERSION@"
+#else
+# define MEGURO_VERSION "@VERSION@ (debug)"
+#endif
+#define MEGURO_CFLAGS "@CCFLAGS@ @CPPFLAGS@"
+#define MEGURO_PREFIX "@PREFIX@"
+
+#endif /* __MEGURO_VERSION_H__ */

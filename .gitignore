@@ -1,0 +1,8 @@
+build/
+.lock-wscript
+tools/wafadmin/*.pyc
+tools/wafadmin/**/*.pyc
+meguro
+meguro_g
+*.tar.gz
+*.tar
