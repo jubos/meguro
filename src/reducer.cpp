@@ -52,11 +52,17 @@ Reducer::begin()
   uint64_t num_shadow_keys = HASH_COUNT(shadow_root);
   progress_ = new Progress("Reducing",num_shadow_keys, env_->verbose_progress);
 
+
   for(elem = shadow_root; elem != NULL; elem=(shadow_key_count_t*) elem->hh.next) {
     uint32_t key_count = 0;
     KeyValueListPair*  pair = new KeyValueListPair();
     pair->key = strdup(elem->key);
-    for(key_count=0; key_count <= elem->count; key_count++) {
+
+    uint32_t max_key_count = elem->count;
+    if (env_->cap_amount > 0) 
+      max_key_count = min(elem->count,(uint32_t) env_->cap_amount);
+
+    for(key_count=0; key_count <= max_key_count; key_count++) {
       char* shadow_key = shad->generate_shadow_key(elem->key,key_count);
       char* value = NULL;
       if ((value = tchdbget2(map_out_db, shadow_key)) != NULL) {

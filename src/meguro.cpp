@@ -51,6 +51,7 @@ int main(int argc, char **argv)
     {"key",           required_argument, 0, 'k'},
     {"help",          no_argument,       0, 'h'},
     {"list",          no_argument,       0, 'l'},
+    {"cap",           required_argument, 0, 'c'},
     {0,0,0,0}
   };
 
@@ -75,6 +76,7 @@ Tuning Options\n\
   -x/--runtime-mem   : javascript runtime memory size\n\
   \n\
 Misc. Options\n\
+  -c/--cap           : cap the reducer values at some arbitrary number\n\
   -d/--dictionary    : optional tokyo cabinet dictionary key/value store\n\
                      : accessible via Meguro.dictionary('key') inside the JS\n\
   -e/--skip-map      : just reduce, this means the input file is the output of another map\n\
@@ -98,7 +100,7 @@ Report bugs at http://github.com/jubos/meguro\n";
 
   int option_index = 0;
   while(1) {
-    c = getopt_long(argc, argv, "a:bm:r:j:t:hvd:k:pon:ex:l", long_options, &option_index);
+    c = getopt_long(argc, argv, "a:bc:m:r:j:t:hvd:k:pon:ex:l", long_options, &option_index);
 
     if (c == -1)
       break;
@@ -108,6 +110,9 @@ Report bugs at http://github.com/jubos/meguro\n";
         break;
       case 'b':
         env.map_bzip2 = true;
+        break;
+      case 'c':
+        env.cap_amount = atoll(optarg);
         break;
       case 'e':
         env.just_reduce = true;
@@ -223,6 +228,8 @@ Report bugs at http://github.com/jubos/meguro\n";
     fprintf(stderr,"Reducer output: %s\n",env.reduce_out_path);
   if (env.map_bzip2)
     fprintf(stderr,"Bzip2: true\n");
+  if (env.cap_amount)
+    fprintf(stderr,"Cap:%llu\n", (unsigned long long) env.cap_amount);
   if (dictionary_file)
     fprintf(stderr,"Dictionary: %s\n",dictionary_file);
   fprintf(stderr,"Number of threads: %d\n",env.number_of_threads);

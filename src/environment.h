@@ -40,6 +40,7 @@ namespace meguro {
     uint64_t number_of_buckets;
     uint32_t number_of_threads;
     uint64_t runtime_memory_size;
+    uint64_t cap_amount;
 
     MeguroEnvironment() {
       just_reduce = false;
@@ -59,6 +60,7 @@ namespace meguro {
       shadow_key_map = NULL;
       number_of_threads = 2;
       runtime_memory_size = DEFAULT_VM_SIZE;
+      cap_amount = 0;
     }
   };
 }
