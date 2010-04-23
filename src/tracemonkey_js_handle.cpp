@@ -38,6 +38,7 @@ static JSBool dictionary(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv,
 //-------------------------------------------
 TraceMonkeyJSHandle::TraceMonkeyJSHandle(const MeguroEnvironment* env) : JSHandle(env)
 {
+  JS_SetCStringsAreUTF8();
   rt_ = JS_NewRuntime(env->runtime_memory_size);
   if (rt_ == NULL)
     throw JSHandleException("TraceMonkey Runtime Init Error");
