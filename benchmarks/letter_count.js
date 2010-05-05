@@ -1,7 +1,7 @@
 function map(key,value) {
   var chars = []
-  for(var i=0; i < key.length; i++) {
-    var kar = key.charAt(i);
+  for(var i=0; i < value.length; i++) {
+    var kar = value.charAt(i);
     if (chars[kar]) {
       chars[kar]++;
     } else {

@@ -309,7 +309,11 @@ static void* threaded_map(void* data)
   try {
     for(;;) {
       KeyValuePair* pair = env->mapper->next();
-      js->map(pair->key,pair->value);
+      try {
+        js->map(pair->key,pair->value);
+      } catch (JSHandleException& jse) {
+        printf("%s\n", jse.what());
+      }
       delete pair;
     }
   } catch (QueueEmptyException qe) {

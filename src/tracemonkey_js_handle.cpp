@@ -38,7 +38,11 @@ static JSBool dictionary(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv,
 //-------------------------------------------
 TraceMonkeyJSHandle::TraceMonkeyJSHandle(const MeguroEnvironment* env) : JSHandle(env)
 {
-  JS_SetCStringsAreUTF8();
+  /* This is for first time initialization (kind of hacky yes) */
+  if (!tracemonkey_initialized) {
+    JS_SetCStringsAreUTF8();
+    tracemonkey_initialized = true;
+  }
   rt_ = JS_NewRuntime(env->runtime_memory_size);
   if (rt_ == NULL)
     throw JSHandleException("TraceMonkey Runtime Init Error");
@@ -147,10 +151,33 @@ TraceMonkeyJSHandle::map(const string& key, const string& value)
   JSBool ok;
 
   char* key_dup = JS_strdup(ctx_,key.c_str());
+  if (!key_dup) {
+    throw JSHandleException("Out of Memory");
+  }
   char* val_dup = JS_strdup(ctx_,value.c_str());
+  if (!val_dup) {
+    free(key_dup);
+    throw JSHandleException("Out of Memory");
+  }
 
-  argv[0] = STRING_TO_JSVAL(JS_NewString(ctx_,key_dup,key.length()));
-  argv[1] = STRING_TO_JSVAL(JS_NewString(ctx_,val_dup,value.length()));
+  JSString* key_jstr = JS_NewString(ctx_,key_dup,key.length());
+  if (key_jstr) {
+    argv[0] = STRING_TO_JSVAL(key_jstr);
+  } else {
+    free(key_dup);
+    throw JSHandleException("Unable to allocate string in TraceMonkey");
+    printf("Null Key Javascript String\n");
+    exit(-1);
+  }
+
+
+  JSString* value_jstr = JS_NewString(ctx_,val_dup,value.length());
+  if (value_jstr) {
+    argv[1] = STRING_TO_JSVAL(value_jstr);
+  } else {
+    free(val_dup);
+    throw JSHandleException("Unable to allocate string in TraceMonkey");
+  }
 
   ok = JS_CallFunctionName(ctx_, global_, "map", 2, argv, &result);
 }
@@ -309,3 +336,5 @@ static JSBool emit_noop(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, 
   *rval = JSVAL_VOID;
   return JS_TRUE;
 }
+
+bool TraceMonkeyJSHandle::tracemonkey_initialized = false;

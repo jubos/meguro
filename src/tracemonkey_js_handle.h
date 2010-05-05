@@ -11,6 +11,7 @@ namespace meguro {
 
   class TraceMonkeyJSHandle : public JSHandle {
     public:
+      static bool tracemonkey_initialized;
       TraceMonkeyJSHandle(const MeguroEnvironment* env);
 
       bool has_reduce_fn();
