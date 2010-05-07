@@ -11,3 +11,11 @@ key value store was also the first supported input type.
 
 Please check out the [Meguro home page](http://www.sevenforge.com/meguro 
 "Meguro Home Page") for more details.
+
+## Changelog
+
+0.5.5  
+  * Added support for handling bad UTF8 (strings that are Spidermonkey cannot allocate)
+
+0.5.4  
+  * Strings are now UTF8 by default
