@@ -233,9 +233,21 @@ Report bugs at http://github.com/jubos/meguro\n";
   if (dictionary_file)
     fprintf(stderr,"Dictionary: %s\n",dictionary_file);
   fprintf(stderr,"Number of threads: %d\n",env.number_of_threads);
-  fprintf(stderr,"Javascript runtime memory size: %s\n",human_readable_filesize(env.runtime_memory_size));
-  fprintf(stderr,"Mapper buckets: %s\n",human_readable_number(env.number_of_buckets));
-  fprintf(stderr,"Mapper memory size: %s\n",human_readable_filesize(env.map_mem_size));
+  char* runtime_memsize_str = human_readable_filesize(env.runtime_memory_size);
+  if (runtime_memsize_str) {
+    fprintf(stderr,"Javascript runtime memory size: %s\n",runtime_memsize_str);
+    free(runtime_memsize_str);
+  }
+  char* bucket_num_str = human_readable_number(env.number_of_buckets);
+  if (bucket_num_str) {
+    fprintf(stderr,"Mapper buckets: %s\n",bucket_num_str);
+    free(bucket_num_str);
+  }
+  char* map_mem_size_str = human_readable_filesize(env.map_mem_size);
+  if (map_mem_size_str) {
+    fprintf(stderr,"Mapper memory size: %s\n",map_mem_size_str);
+    free(map_mem_size_str);
+  }
 
   if (dictionary_file) {
     try {
