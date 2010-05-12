@@ -1,5 +1,5 @@
 Name:	meguro	
-Version: 0.5.5
+Version: 0.5.6
 Release: 1
 Summary: A Javascript Map/Reduce Engine
 Source: %{name}-%{version}.tar.gz

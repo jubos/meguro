@@ -7,7 +7,7 @@ from os.path import join, dirname, abspath
 from logging import fatal
 
 cwd = os.getcwd()
-VERSION="0.5.5"
+VERSION="0.5.6"
 APPNAME="meguro"
 
 srcdir = '.'
