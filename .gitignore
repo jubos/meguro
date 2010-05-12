@@ -8,3 +8,5 @@ meguro_g
 *.tar
 map.out
 reduce.out
+cscope.out
+tags

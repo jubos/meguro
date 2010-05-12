@@ -30,6 +30,7 @@ void reportError(JSContext *cx, const char *message, JSErrorReport *report);
 static JSBool emit(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 static JSBool emit_noop(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 static JSBool slog(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+static JSBool sset(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 static JSBool save(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 static JSBool dictionary(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
@@ -96,6 +97,10 @@ TraceMonkeyJSHandle::TraceMonkeyJSHandle(const MeguroEnvironment* env) : JSHandl
     if (!emit_fn)
       throw JSHandleException("Error Defining Mapper Emit");
   }
+
+  JSFunction* set_fn = JS_DefineFunction(ctx_,meguro_obj_, "set", sset, 2,0);
+  if (!set_fn)
+    throw JSHandleException("Error Defining Mapper Set");
 
   JSFunction* log_fn = JS_DefineFunction(ctx_,meguro_obj_,"log",slog,1, 0);
   if (!log_fn)
@@ -166,8 +171,6 @@ TraceMonkeyJSHandle::map(const string& key, const string& value)
   } else {
     free(key_dup);
     throw JSHandleException("Unable to allocate string in TraceMonkey");
-    printf("Null Key Javascript String\n");
-    exit(-1);
   }
 
 
@@ -190,6 +193,8 @@ TraceMonkeyJSHandle::reduce(const string& key, const vector<char*>& values)
   JSBool ok = false;
 
   JSObject* array = JS_NewArrayObject(ctx_,0,NULL);
+  if (!array)
+    throw JSHandleException("Unable to allocate array in Tracemonkey");
   //JS_AddRoot(ctx_,array);
 
   int idx = 0;
@@ -197,13 +202,29 @@ TraceMonkeyJSHandle::reduce(const string& key, const vector<char*>& values)
   for(vector<char*>::const_iterator ii = values.begin(); ii != values.end(); ii++) {
     str = *ii;
     char* str_dup = JS_strdup(ctx_,str);
-    jsval elem = STRING_TO_JSVAL(JS_NewString(ctx_,str_dup,strlen(str_dup)));
-    JS_SetElement(ctx_,array,idx,&elem);
-    idx++;
+    JSString* elem_str = JS_NewString(ctx_,str_dup,strlen(str_dup));
+    if (elem_str) {
+      jsval elem = STRING_TO_JSVAL(elem_str);
+      JS_SetElement(ctx_,array,idx,&elem);
+      idx++;
+    } else {
+      free(str_dup);
+      throw JSHandleException("Unable to allocate string in TraceMonkey");
+    }
   }
 
-  char* key_dup = strdup(key.c_str());
-  argv[0] = STRING_TO_JSVAL(JS_NewString(ctx_,key_dup,key.length()));
+  char* key_dup = JS_strdup(ctx_,key.c_str());
+  if (!key_dup) {
+    throw JSHandleException("Out of memory");
+  }
+
+  JSString* key_jstr = JS_NewString(ctx_,key_dup,key.length());
+  if (key_jstr) {
+    argv[0] = STRING_TO_JSVAL(key_jstr);
+  } else {
+    free(key_dup);
+    throw JSHandleException("Unable to allocate string in TraceMonkey");
+  }
 
   argv[1] = OBJECT_TO_JSVAL(array);
   ok = JS_CallFunctionName(ctx_, global_, "reduce", 2, argv, &result);
@@ -330,6 +351,25 @@ static JSBool emit_noop(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, 
   if (mapper) {
     int rc = JS_SuspendRequest(ctx);
     mapper->emit_noop(key,val);
+    JS_ResumeRequest(ctx,rc);
+  }
+
+  *rval = JSVAL_VOID;
+  return JS_TRUE;
+}
+
+static JSBool sset(JSContext* ctx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
+{
+  JSBool ok;
+
+  const char* key, *val;
+  ok = JS_ConvertArguments(ctx,argc,argv,"ss",&key,&val);
+
+  JSHandle* handle = (JSHandle*) JS_GetPrivate(ctx,obj);
+  Mapper* mapper = handle->mapper();
+  if (mapper) {
+    int rc = JS_SuspendRequest(ctx);
+    mapper->set(key,val);
     JS_ResumeRequest(ctx,rc);
   }
 

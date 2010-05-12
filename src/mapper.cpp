@@ -29,6 +29,7 @@ static Iterator* pick_an_iterator(const char* path);
 Mapper::Mapper(const MeguroEnvironment* env)
 {
   emit_count_ = 0;
+  set_count_ = 0;
   emit_size_estimate_ = 0;
   env_ = env;
   reduce_ = env->reduce_out_path != NULL;
@@ -124,8 +125,10 @@ Mapper::end()
   }
   tchdbdel(map_out_db_);
   char* number_emits = human_readable_number(emit_count_);
-  printf("Mapper Complete: %s Emits\n", number_emits);
+  char* number_sets = human_readable_number(set_count_);
+  printf("Mapper Complete: %s Emits %s Sets\n", number_emits, number_sets);
   free(number_emits);
+  free(number_sets);
   if (env_->optimize_bucket_count) {
     char* file_size_estimate = human_readable_filesize(emit_size_estimate_);
     printf("Estimated Map File Size: %s\n",file_size_estimate);
@@ -175,6 +178,30 @@ Mapper::emit(const string& key, const string& value)
     free(shadow_key);
   } else 
     throw MapperException("Out of Memory");
+}
+
+void 
+Mapper::set(const string& key, const string& value)
+{
+  int ecode;
+  const char* key_cstr = key.c_str();
+  const char* value_cstr = value.c_str();
+
+  if (pthread_mutex_lock(&emit_mutex_) < 0) {
+    throw MapperException("Mutex Locking Issue");
+  }
+
+  set_count_++;
+
+  if (pthread_mutex_unlock(&emit_mutex_) < 0) {
+    throw MapperException("Mutex Unlocking Issue");
+  }
+
+  if(!tchdbput(map_out_db_,key_cstr,strlen(key_cstr), value_cstr, strlen(value_cstr))) {
+    ecode = tchdbecode(map_out_db_);
+    fprintf(stderr, "put error: %s\n", tchdberrmsg(ecode));
+    throw MapperException("Could not tchdbput");
+  }
 }
 
 /*

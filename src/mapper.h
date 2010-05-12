@@ -44,6 +44,8 @@ namespace meguro {
       void emit(const string& key, const string& value);
       void emit_noop(const string& key, const string& value);
 
+      void set(const string& key, const string& value);
+
       bool reduce_;
       JSHandle* js_;
       const char* map_out_path_;
@@ -53,6 +55,7 @@ namespace meguro {
       Iterator* iterator_;
     protected:
       uint64_t emit_count_;
+      uint64_t set_count_;
       uint64_t emit_size_estimate_;
       uint32_t input_path_index_;
       pthread_mutex_t emit_mutex_;
