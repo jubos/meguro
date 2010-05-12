@@ -407,6 +407,7 @@ def build_meguro(bld):
     src/line_iterator.cpp
     src/tokyo_cabinet_iterator.cpp
     src/tokyo_cabinet_hash_iterator.cpp
+    src/gzip_iterator.cpp
     src/progress.cpp
     src/shadow_key_map.cpp
     src/mapper.cpp

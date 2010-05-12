@@ -6,6 +6,7 @@
 #include "iterator.h"
 #include "line_iterator.h"
 #include "tokyo_cabinet_iterator.h"
+#include "gzip_iterator.h"
 #include "tokyo_cabinet_hash_iterator.h"
 #include "base64.h"
 #include "mgutil.h"
@@ -230,6 +231,8 @@ static Iterator* pick_an_iterator(const char* filename)
       return new TokyoCabinetHashIterator();
     else if (!strcasecmp(ext,".tcb") || !strcasecmp(ext,".tcf") || !strcasecmp(ext,".tct"))
       return new TokyoCabinetIterator();
+    else if(!strcasecmp(ext,".gz") || !strcasecmp(ext,".gzip"))
+      return new GzipIterator();
     else
       return new LineIterator();
   } else 
