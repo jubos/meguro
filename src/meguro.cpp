@@ -418,6 +418,7 @@ static bool check_write_permissions(const char* filename)
   int filedes = open(filename, O_CREAT, S_IRWXU);
   if (filedes > 0) {
     close(filedes);
+    unlink(filename);
     return true;
   } else {
     fprintf(stderr,"Error writing to %s\n", filename);
