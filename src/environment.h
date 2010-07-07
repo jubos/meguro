@@ -41,6 +41,8 @@ namespace meguro {
     uint32_t number_of_threads;
     uint64_t runtime_memory_size;
     uint64_t cap_amount;
+    bool incremental_map;
+    bool incremental_reduce;
 
     MeguroEnvironment() {
       just_reduce = false;
@@ -61,6 +63,8 @@ namespace meguro {
       number_of_threads = 2;
       runtime_memory_size = DEFAULT_VM_SIZE;
       cap_amount = 0;
+      incremental_map = false;
+      incremental_reduce = false;
     }
   };
 }

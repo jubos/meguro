@@ -33,6 +33,8 @@ int main(int argc, char **argv)
   MeguroEnvironment env = MeguroEnvironment();
   int verbose_progress = 0;
   bool opt_list = false;
+  int incremental_map = 0;
+  int incremental_reduce = 0;
 
   struct option long_options[] = {
     {"javascript",    required_argument, 0, 'j'},
@@ -52,6 +54,8 @@ int main(int argc, char **argv)
     {"help",          no_argument,       0, 'h'},
     {"list",          no_argument,       0, 'l'},
     {"cap",           required_argument, 0, 'c'},
+    {"incremental-map",      no_argument,       &incremental_map, 1},
+    {"incremental-reduce",   no_argument,       &incremental_reduce, 1},
     {0,0,0,0}
   };
 
@@ -76,14 +80,16 @@ Tuning Options\n\
   -x/--runtime-mem   : javascript runtime memory size\n\
   \n\
 Misc. Options\n\
-  -c/--cap           : cap the reducer values at some arbitrary number\n\
-  -d/--dictionary    : optional tokyo cabinet dictionary key/value store\n\
-                     : accessible via Meguro.dictionary('key') inside the JS\n\
-  -e/--skip-map      : just reduce, this means the input file is the output of another map\n\
-  -h/--help          : show this message\n\
-  -k/--key           : just run the map/reduce on the one key\n\
-  --verbose          : show verbose progress\n\
-  -v/--version       : show the version\n\
+  -c/--cap             : cap the reducer values at some arbitrary number\n\
+  -d/--dictionary      : optional tokyo cabinet dictionary key/value store\n\
+                       : accessible via Meguro.dictionary('key') inside the JS\n\
+  -e/--skip-map        : just reduce, this means the input file is the output of another map\n\
+  -h/--help            : show this message\n\
+  --incremental-map    : emits and sets go into an existing output file\n\
+  --incremental-reduce : saves go into an existing output file\n\
+  -k/--key             : just run the map/reduce on the one key\n\
+  --verbose            : show verbose progress\n\
+  -v/--version         : show the version\n\
   \n\
 Output File Options\n\
   -l/--list          : list a map or reduce output files contents in a key<TAB>value format\n\
@@ -170,6 +176,8 @@ Report bugs at http://github.com/jubos/meguro\n";
   }
   
   env.verbose_progress = (verbose_progress == 1);
+  env.incremental_map = (incremental_map == 1);
+  env.incremental_reduce = (incremental_reduce == 1);
 
   for(int index = optind; index < argc; index++) {
     env.input_paths.push_back(argv[index]);
@@ -415,14 +423,19 @@ static void reduce_master(MeguroEnvironment* env)
  */
 static bool check_write_permissions(const char* filename)
 {
-  int filedes = open(filename, O_CREAT, S_IRWXU);
+  int filedes = open(filename,O_RDWR);
   if (filedes > 0) {
-    close(filedes);
-    unlink(filename);
     return true;
   } else {
-    fprintf(stderr,"Error writing to %s\n", filename);
-    return false;
+    filedes = open(filename, O_CREAT, S_IRWXU);
+    if (filedes > 0) {
+      close(filedes);
+      unlink(filename);
+      return true;
+    } else {
+      fprintf(stderr,"Error writing to %s\n", filename);
+      return false;
+    }
   }
 }
 

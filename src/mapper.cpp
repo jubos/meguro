@@ -81,7 +81,15 @@ Mapper::begin()
     exit(-1);
   }
 
-  if (!tchdbopen(map_out_db_,map_out_path_, HDBOWRITER|HDBOCREAT|HDBOTRUNC)) {
+  int open_mode;
+  if (env_->incremental_map) {
+    open_mode = HDBOWRITER;
+  } else {
+    open_mode = HDBOWRITER | HDBOCREAT | HDBOTRUNC;
+  }
+  
+
+  if (!tchdbopen(map_out_db_,map_out_path_, open_mode)) {
     ecode = tchdbecode(map_out_db_);
     fprintf(stderr, "open error: %s\n", tchdberrmsg(ecode));
     exit(-1);

@@ -140,7 +140,14 @@ Reducer::open_reducer_out()
     throw ReducerException("Reducer tokyo cabinet mutex error");
   }
 
-  if(!tchdbopen(reduce_out_db_,env_->reduce_out_path, HDBOWRITER|HDBOCREAT|HDBOTRUNC)){
+  int open_mode;
+  if (env_->incremental_reduce) {
+    open_mode = HDBOWRITER;
+  } else {
+    open_mode = HDBOWRITER | HDBOCREAT | HDBOTRUNC;
+  }
+
+  if(!tchdbopen(reduce_out_db_,env_->reduce_out_path,open_mode)){
     ecode = tchdbecode(reduce_out_db_);
     fprintf(stderr, "Reducer open error: %s\n", tchdberrmsg(ecode));
     throw ReducerException("Reducer tokyo cabinet open error");
