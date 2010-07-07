@@ -8,6 +8,7 @@
 #include "tokyo_cabinet_iterator.h"
 #include "gzip_iterator.h"
 #include "tokyo_cabinet_hash_iterator.h"
+#include "stdin_iterator.h"
 #include "base64.h"
 #include "mgutil.h"
 #include "shadow_key_map.h"
@@ -20,7 +21,7 @@ using namespace meguro;
 //#define MAX_SUFFIX_LEN 1024
 //#define SUFFIX_SEPARATOR "|m"
 
-static Iterator* pick_an_iterator(const char* path);
+static Iterator* pick_an_iterator(const MeguroEnvironment* env, const char* path);
 
 /*
  * Open the JS file and store it in the js_ handle
@@ -90,7 +91,7 @@ Mapper::begin()
   while(input_path_index_ < env_->input_paths.size()) {
     const char* path = env_->input_paths[input_path_index_];
     try {
-      iterator_ = pick_an_iterator(path);
+      iterator_ = pick_an_iterator(env_,path);
       iterator_->initialize(env_, path);
       for(;;) {
         KeyValuePair* kvp = iterator_->next();
@@ -223,8 +224,11 @@ Mapper::emit_noop(const string& key, const string& value)
 /*
  * Guess that it is a tokyo cabinet file based on the naming schema
  */
-static Iterator* pick_an_iterator(const char* filename)
+static Iterator* pick_an_iterator(const MeguroEnvironment* env, const char* filename)
 {
+  if (env->use_stdin)
+    return new StdinIterator();
+
   char* ext = strrchr((char*) filename,'.');
   if (ext) {
     if (!strcasecmp(ext, ".tch"))

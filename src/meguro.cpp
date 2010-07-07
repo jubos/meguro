@@ -32,6 +32,9 @@ int main(int argc, char **argv)
 {
   MeguroEnvironment env = MeguroEnvironment();
   int verbose_progress = 0;
+  int use_stdin = 0;
+  int only_map = 0;
+  int only_reduce = 0;
   bool opt_list = false;
 
   struct option long_options[] = {
@@ -52,6 +55,9 @@ int main(int argc, char **argv)
     {"help",          no_argument,       0, 'h'},
     {"list",          no_argument,       0, 'l'},
     {"cap",           required_argument, 0, 'c'},
+    {"only-map",      no_argument, &only_map,     1},
+    {"only-reduce",   no_argument, &only_reduce,  1},
+    {"stdin",         no_argument, &use_stdin,    1},
     {0,0,0,0}
   };
 
@@ -79,10 +85,12 @@ Misc. Options\n\
   -c/--cap           : cap the reducer values at some arbitrary number\n\
   -d/--dictionary    : optional tokyo cabinet dictionary key/value store\n\
                      : accessible via Meguro.dictionary('key') inside the JS\n\
-  -e/--skip-map      : just reduce, this means the input file is the output of another map\n\
   -h/--help          : show this message\n\
   -k/--key           : just run the map/reduce on the one key\n\
   --verbose          : show verbose progress\n\
+  --stdin            : use stdin as the input (useful for Hadoop Streaming)\n\
+  --only-map         : just run the map calls, even if your .js has a reduce function\n\
+  --only-reduce      : run the reduce calls on the specified map output file. Useful for testing reduce\n\
   -v/--version       : show the version\n\
   \n\
 Output File Options\n\
@@ -170,16 +178,22 @@ Report bugs at http://github.com/jubos/meguro\n";
   }
   
   env.verbose_progress = (verbose_progress == 1);
+  env.use_stdin = (use_stdin == 1);
 
-  for(int index = optind; index < argc; index++) {
-    env.input_paths.push_back(argv[index]);
+  if (env.use_stdin) {
+    env.input_paths.push_back((char*) "STDIN");
+    printf("Using STDIN\n");
+  } else {
+    for(int index = optind; index < argc; index++) {
+      env.input_paths.push_back(argv[index]);
+    }
+    if (env.input_paths.size() == 0 && !env.use_stdin) {
+      fprintf(stderr,"You must specify at least one input file\n");
+      fprintf(stderr,usage);
+      exit(-1);
+    }
   }
 
-  if (env.input_paths.size() == 0) {
-    fprintf(stderr,"You must specify at least one input file\n");
-    fprintf(stderr,usage);
-    exit(-1);
-  }
 
   if (opt_list) {
     print_input_files(&env);
@@ -271,7 +285,7 @@ Report bugs at http://github.com/jubos/meguro\n";
       try {
         env.shadow_key_map->load(env.input_paths[0]);
       } catch (ShadowKeyMapException& skme) {
-        printf("Error: %s\n", skme.what());
+        fprintf(stderr,"Error: %s\n", skme.what());
         exit(-1);
       }
     } else {
@@ -324,7 +338,7 @@ static void* threaded_map(void* data)
       try {
         js->map(pair->key,pair->value);
       } catch (JSHandleException& jse) {
-        printf("%s\n", jse.what());
+        fprintf(stderr,"%s\n", jse.what());
       }
       delete pair;
     }

@@ -37,10 +37,13 @@ namespace meguro {
     bool map_bzip2;
     bool optimize_bucket_count;
     bool just_reduce; 
+    bool use_stdin;
     uint64_t number_of_buckets;
     uint32_t number_of_threads;
     uint64_t runtime_memory_size;
     uint64_t cap_amount;
+    bool only_map;
+    bool only_reduce;
 
     MeguroEnvironment() {
       just_reduce = false;
@@ -61,6 +64,9 @@ namespace meguro {
       number_of_threads = 2;
       runtime_memory_size = DEFAULT_VM_SIZE;
       cap_amount = 0;
+      use_stdin = false;
+      only_map = false;
+      only_reduce = false;
     }
   };
 }

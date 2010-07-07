@@ -408,11 +408,14 @@ def build_meguro(bld):
     src/tokyo_cabinet_iterator.cpp
     src/tokyo_cabinet_hash_iterator.cpp
     src/gzip_iterator.cpp
+    src/stdin_iterator.cpp
     src/progress.cpp
     src/shadow_key_map.cpp
     src/mapper.cpp
+    src/hadoop_mapper.cpp
     src/meguro.cpp
     src/reducer.cpp
+    src/hadoop_reducer.cpp
     src/thread_safe_queue.cpp
     src/tracemonkey_js_handle.cpp
     src/dictionary.cpp
