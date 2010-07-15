@@ -128,7 +128,8 @@ def configure_tokyocabinet(conf):
   if not os.path.exists(default_tgt):
     copytree(src,default_tgt,True)
 
-  configure_template = "cd %s && ./configure --disable-shared %s %s %s"
+  #configure_template = "cd %s && ./configure --disable-shared %s %s %s"
+  configure_template = "cd %s && ./configure %s %s %s"
 
   #enable_static = "--enable-static"
   enable_static = ""
@@ -371,7 +372,7 @@ def build_tokyocabinet(bld):
   default_build_dir = bld.srcnode.abspath(default_env)
   default_dir = join(default_build_dir, tc_deps_dir)
 
-  rule_template = "cd %s && make"
+  rule_template = "cd %s && make && ranlib libtokyocabinet.a"
   static_lib = "libtokyocabinet.a"
   target = join(tc_deps_dir,static_lib)
 
@@ -383,6 +384,16 @@ def build_tokyocabinet(bld):
     before = "cxx",
     install_path = None
   )
+  
+  # ranlib_template = "cd %s && ranlib libtokyocabinet.a"
+  # ranlib = bld(
+  #   name = "tokyoranlib",
+  #   source = bld.path.ant_glob(join(tc_deps_dir),"libtokyocabinet.a"),
+  #   target = target,
+  #   rule = rule_template % (default_dir),
+  #   before = "cxx",
+  #   install_path = None
+  # )
 
   default_env["CPPPATH_TOKYOCABINET"] = default_dir
   default_env["LINKFLAGS_TOKYOCABINET"] = join(default_dir,static_lib)
@@ -393,6 +404,9 @@ def build_tokyocabinet(bld):
     debug_dir = join(debug_build_dir, tc_deps_dir)
     tc_g = tc.clone('debug')
     tc_g.rule = rule_template % (debug_dir)
+    # ranlib_g = ranlib.clone('debug')
+    # ranlib_g.rule = ranlib_template % (debug_dir)
+    
     debug_env["CPPPATH_TOKYOCABINET"] = debug_dir
     debug_env["LINKFLAGS_TOKYOCABINET"] = join(debug_dir,static_lib)
 
