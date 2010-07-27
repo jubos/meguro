@@ -37,20 +37,19 @@ namespace meguro {
       Mapper(const MeguroEnvironment* env);
       virtual ~Mapper();
 
-      void begin();
-      void end();
-
       KeyValuePair* next();
-      void emit(const string& key, const string& value);
-      void emit_noop(const string& key, const string& value);
+      void iterate();
 
-      void set(const string& key, const string& value);
+      /* These are the methods that subclasses should implement */
+      virtual void begin() = 0;
+      virtual void end() = 0;
+      virtual void emit(const string& key, const string& value) = 0;
+      virtual void emit_noop(const string& key, const string& value) = 0;
+      virtual void set(const string& key, const string& value) = 0;
 
       bool reduce_;
       JSHandle* js_;
-      const char* map_out_path_;
-      TCHDB* map_out_db_;
-      int map_count_;
+
       ThreadSafeQueue<KeyValuePair*>* tsq_;
       Iterator* iterator_;
     protected:

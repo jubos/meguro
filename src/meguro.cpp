@@ -7,6 +7,8 @@
 #include <pthread.h>
 
 #include "mapper.h"
+#include "tokyo_cabinet_mapper.h"
+#include "hadoop_mapper.h"
 #include "reducer.h"
 #include "tracemonkey_js_handle.h"
 #include "meguro_version.h"
@@ -35,6 +37,7 @@ int main(int argc, char **argv)
   int use_stdin = 0;
   int only_map = 0;
   int only_reduce = 0;
+  int output_type_arg = 0;
   bool opt_list = false;
 
   struct option long_options[] = {
@@ -58,6 +61,7 @@ int main(int argc, char **argv)
     {"only-map",      no_argument, &only_map,     1},
     {"only-reduce",   no_argument, &only_reduce,  1},
     {"stdin",         no_argument, &use_stdin,    1},
+    {"output-type",   required_argument, &output_type_arg, 1},
     {0,0,0,0}
   };
 
@@ -88,6 +92,8 @@ Misc. Options\n\
   -h/--help          : show this message\n\
   -k/--key           : just run the map/reduce on the one key\n\
   --verbose          : show verbose progress\n\
+  --output-type      : use a different output format\n\
+                     : valid values: ('tokyocabinet', 'stdio')\n\
   --stdin            : use stdin as the input (useful for Hadoop Streaming)\n\
   --only-map         : just run the map calls, even if your .js has a reduce function\n\
   --only-reduce      : run the reduce calls on the specified map output file. Useful for testing reduce\n\
@@ -115,6 +121,17 @@ Report bugs at http://github.com/jubos/meguro\n";
 
     switch (c) {
       case 0:
+        if (output_type_arg) {
+          if (!strcmp(optarg,"tokyocabinet")) {
+            env.output_type = TOKYOCABINET_OUTPUT;
+          } else if (!strcmp(optarg,"stdio")) {
+            env.output_type = STDIO_OUTPUT;
+          } else {
+            fprintf(stderr,"You specifed an invalid output type. Please choose between 'tokyocabinet' and 'stdio'\n"); 
+            exit(-1);
+          }
+          output_type_arg = 0;
+        }
         break;
       case 'b':
         env.map_bzip2 = true;
@@ -384,7 +401,18 @@ static void map_master(MeguroEnvironment* env)
 {
   pthread_t tid[env->number_of_threads];
   int error;
-  Mapper* mapper = new Mapper(env);
+
+  Mapper* mapper;
+  switch(env->output_type) {
+    case TOKYOCABINET_OUTPUT:
+      mapper = new TokyoCabinetMapper(env);
+      break;
+    case STDIO_OUTPUT:
+      mapper = new HadoopMapper(env);
+      break;
+    default:
+      return;
+  }
   env->mapper = mapper;
 
   for(unsigned int i=0; i< env->number_of_threads; i++) {

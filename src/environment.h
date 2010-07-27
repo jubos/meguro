@@ -20,6 +20,8 @@ namespace meguro {
   class Progress;
   class Dictionary;
 
+  typedef enum {TOKYOCABINET_OUTPUT = 0, STDIO_OUTPUT} OutputType;
+
   struct MeguroEnvironment {
     vector<char*> input_paths;
     char* map_out_path;
@@ -44,6 +46,7 @@ namespace meguro {
     uint64_t cap_amount;
     bool only_map;
     bool only_reduce;
+    int output_type;
 
     MeguroEnvironment() {
       just_reduce = false;
@@ -67,6 +70,7 @@ namespace meguro {
       use_stdin = false;
       only_map = false;
       only_reduce = false;
+      output_type = TOKYOCABINET_OUTPUT;
     }
   };
 }

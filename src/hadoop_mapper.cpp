@@ -3,6 +3,8 @@
 
 using namespace meguro;
 
+HadoopMapper::HadoopMapper(const MeguroEnvironment* env) : Mapper(env) {}
+
 void 
 HadoopMapper::emit(const string& key, const string& value)
 {

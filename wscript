@@ -413,6 +413,7 @@ def build_meguro(bld):
     src/shadow_key_map.cpp
     src/mapper.cpp
     src/hadoop_mapper.cpp
+    src/tokyo_cabinet_mapper.cpp
     src/meguro.cpp
     src/reducer.cpp
     src/hadoop_reducer.cpp
